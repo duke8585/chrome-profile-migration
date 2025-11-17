@@ -1,0 +1,20 @@
+# Chrome Profile Migration Configuration
+#
+# This file is automatically created when you run the script for the first time.
+# You can manually edit these paths and run the script again to use different profiles.
+#
+# IMPORTANT: Chrome must be closed during migration!
+
+[profiles]
+# Source profile - where to migrate FROM
+# Examples:
+#   - Backup profile: ~/Desktop/chrome_backup/Default
+#   - Another Chrome profile: ~/Library/Application Support/Google/Chrome/Profile 1
+from_profile = ~/Desktop/chrome_backup/Default
+
+# Destination profile - where to migrate TO
+# Examples:
+#   - Backup location (recommended): ~/backups/Default_20250117
+#   - Existing Chrome profile: ~/Library/Application Support/Google/Chrome/Profile 16
+#   - Custom backup location: ~/.backup/chrome_backup_20250117
+to_profile = ~/backups/Default_20250117
