@@ -511,8 +511,79 @@ def copy_tabs(from_profile, to_profile):
         except Exception as e:
             log(f"❌ ERROR copying {item_name}: {e}")
 
+def sanitize_preferences(prefs_data, email_to_remove):
+    """Remove account-related data from preferences JSON"""
+    import json
+
+    # Fields that might contain the old email/account info
+    account_fields_to_remove = [
+        'account_info',
+        'account_tracker_service_last_update',
+        'account_id_migration_state',
+        'signin',
+        'profile.user_name',
+        'profile.email',
+        'profile.gaia_id',
+        'profile.gaia_name',
+        'profile.gaia_given_name',
+        'sync',
+        'sync_service',
+        'google',
+        'gaia_cookie'
+    ]
+
+    cleaned_count = 0
+
+    # Remove top-level account fields
+    for field in account_fields_to_remove:
+        if '.' in field:
+            # Handle nested fields like 'profile.user_name'
+            parts = field.split('.')
+            current = prefs_data
+            for part in parts[:-1]:
+                if part in current:
+                    current = current[part]
+                else:
+                    break
+            else:
+                if parts[-1] in current:
+                    del current[parts[-1]]
+                    cleaned_count += 1
+        else:
+            if field in prefs_data:
+                del prefs_data[field]
+                cleaned_count += 1
+
+    # Also check for the specific email in string values (recursive)
+    def clean_email_references(obj, email):
+        """Recursively find and clean email references"""
+        nonlocal cleaned_count
+        if isinstance(obj, dict):
+            keys_to_delete = []
+            for key, value in obj.items():
+                if isinstance(value, str) and email in value:
+                    # If it's just the email, delete the key
+                    if value == email:
+                        keys_to_delete.append(key)
+                        cleaned_count += 1
+                elif isinstance(value, (dict, list)):
+                    clean_email_references(value, email)
+            for key in keys_to_delete:
+                del obj[key]
+        elif isinstance(obj, list):
+            for item in obj:
+                if isinstance(item, (dict, list)):
+                    clean_email_references(item, email)
+
+    if email_to_remove:
+        clean_email_references(prefs_data, email_to_remove)
+
+    return cleaned_count
+
 def copy_extension_preferences(from_profile, to_profile):
     """Copy Preferences files needed for extensions to be recognized"""
+    import json
+
     log("\n=== Copying Extension Preferences ===")
 
     for filename in EXTENSION_PREFERENCE_FILES:
@@ -524,14 +595,28 @@ def copy_extension_preferences(from_profile, to_profile):
             continue
 
         try:
-            log(f"Copying {filename}...")
-            shutil.copy2(source, dest)
+            log(f"Processing {filename}...")
 
-            file_size = os.path.getsize(source)
-            log(f"✓ Copied {filename} ({file_size / 1024:.1f} KB)")
+            # Load the JSON preferences
+            with open(source, 'r', encoding='utf-8') as f:
+                prefs_data = json.load(f)
+
+            # Sanitize to remove old account info
+            log(f"Sanitizing account data from {filename}...")
+            cleaned_count = sanitize_preferences(prefs_data, "m.rieger@7foods.de")
+
+            if cleaned_count > 0:
+                log(f"  ✓ Removed {cleaned_count} account-related field(s)")
+
+            # Write the cleaned preferences
+            with open(dest, 'w', encoding='utf-8') as f:
+                json.dump(prefs_data, f, indent=2)
+
+            file_size = os.path.getsize(dest)
+            log(f"✓ Copied and sanitized {filename} ({file_size / 1024:.1f} KB)")
 
         except Exception as e:
-            log(f"❌ ERROR copying {filename}: {e}")
+            log(f"❌ ERROR processing {filename}: {e}")
 
 def migrate_keyword_searches(from_profile, to_profile):
     """Migrate custom keyword searches from Web Data SQLite database"""

@@ -48,6 +48,28 @@ An interactive Python script to selectively migrate data between Chrome profiles
 
 ## Quick Start
 
+### IMPORTANT: Create New Profile First
+
+**To avoid account contamination, follow this workflow:**
+
+1. **Create a fresh Chrome profile WITHOUT signing in:**
+   - Open Chrome
+   - Click your profile icon → "Add" → "Continue without an account"
+   - Give it a name (e.g., "New Profile")
+   - **DO NOT sign in to Google yet!**
+
+2. **Note the profile name** (e.g., "Profile 17") by checking:
+   - Chrome Settings → You and Google → (profile name shown at top)
+   - Or check `~/Library/Application Support/Google/Chrome/` for the newest profile folder
+
+3. **Close Chrome completely** (not just the window - quit Chrome)
+
+4. **Run the migration to restore your settings into this new profile**
+
+5. **After migration is complete, open Chrome and sign in** to your Google account to start sync
+
+This ensures the new profile isn't contaminated with old account data from the backup.
+
 ### First Run - Profile Discovery
 
 1. **Run the script:**
@@ -169,6 +191,7 @@ MIGRATION_OPTIONS = {
 - **Chrome check**: Warns if Chrome is running (must be closed for safe migration)
 - **Duplicate prevention**: Won't overwrite existing keyword searches with the same name
 - **Path validation**: Creates destination directory if it doesn't exist
+- **Account sanitization**: Automatically removes old account information from Preferences files to prevent account contamination
 
 ## Backup Location
 
@@ -205,6 +228,12 @@ Example:
 **Keyword searches missing:**
 - Check Chrome Settings > Search Engine > Manage search engines
 - The source's Web Data database may not have had custom searches
+
+**Old account email still showing up:**
+- This can happen if you signed in to the profile BEFORE running migration
+- **Solution**: Create a NEW profile without signing in first, then migrate into it
+- The script sanitizes Preferences files, but Chrome may cache account info if already signed in
+- After migration completes, THEN sign in to your new account
 
 ## Example Output
 
